@@ -37,4 +37,9 @@ export default tseslint.config(
     },
   },
   eslintPluginPrettier,
+  {
+    rules: {
+      '@typescript-eslint/no-empty-object-type': 'off',
+    },
+  },
 )
