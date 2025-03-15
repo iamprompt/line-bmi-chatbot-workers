@@ -66,29 +66,40 @@ const handleBMIDialogflow = async (
   const bmiClass = classifyBMI(bmiValue)
   const bmiDescription = getBMIClassDescription(bmiClass)
 
-  const { accessToken, replyType } = z
-    .object({
-      accessToken: z.string().nullable(),
-      replyType: z.nativeEnum(ReplyType).default(ReplyType.TEXT),
-    })
-    .parse({
-      accessToken: request.headers.get('x-line-channel-access-token'),
-      replyType: request.headers.get('x-line-reply-type'),
-    })
+  try {
+    const { accessToken, replyType } = z
+      .object({
+        accessToken: z.string().nullable(),
+        replyType: z.nativeEnum(ReplyType).default(ReplyType.TEXT),
+      })
+      .parse({
+        accessToken: request.headers.get('x-line-channel-access-token'),
+        replyType: request.headers.get('x-line-reply-type'),
+      })
 
-  if (replyType === ReplyType.FLEX) {
+    if (replyType === ReplyType.FLEX) {
+      return Response.json(
+        {
+          fulfillmentMessages: [
+            { payload: { line: getBMIResultFlexMessage(bmiValue) } },
+          ],
+        },
+        { status: 200 },
+      )
+    }
+
     return Response.json(
-      {
-        fulfillmentMessages: [
-          { payload: { line: getBMIResultFlexMessage(bmiValue) } },
-        ],
-      },
+      { fulfillmentMessages: [{ text: { text: [bmiDescription] } }] },
       { status: 200 },
     )
-  }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Response.json(
+        { message: 'Invalid Request', details: error.issues },
+        { status: 400 },
+      )
+    }
 
-  return Response.json(
-    { fulfillmentMessages: [{ text: { text: [bmiDescription] } }] },
-    { status: 200 },
-  )
+    return Response.json({ message: 'Invalid Request' }, { status: 400 })
+  }
 }
