@@ -1,4 +1,11 @@
-import { calculateBMI, classifyBMI, getBMIClassDescription } from './bmi'
+import { z } from 'zod'
+
+import {
+  calculateBMI,
+  classifyBMI,
+  getBMIClassDescription,
+  getBMIResultFlexMessage,
+} from './bmi'
 import { DialogflowWebhookRequestBody, QueryResult } from './types'
 
 export const dialogflowHandler: ExportedHandlerFetchHandler<
@@ -19,13 +26,31 @@ export const dialogflowHandler: ExportedHandlerFetchHandler<
   }
 
   const json = await request.json<DialogflowWebhookRequestBody>()
-
   const { queryResult } = json
-
   if (!isIntentMatch(headerIntent, queryResult)) {
     return Response.json({ message: 'Intent does not match' }, { status: 400 })
   }
 
+  return handleBMIDialogflow(request, env, ctx, json)
+}
+
+const isIntentMatch = (expectedIntentId: string, queryResult: QueryResult) => {
+  const intentId = queryResult.intent.name.split('/').pop()
+  return intentId === expectedIntentId
+}
+
+enum ReplyType {
+  TEXT = 'text',
+  FLEX = 'flex',
+}
+
+const handleBMIDialogflow = async (
+  request: Request,
+  env: Env,
+  ctx: unknown,
+  json: DialogflowWebhookRequestBody,
+) => {
+  const { queryResult } = json
   const { parameters } = queryResult
   const heightCm = parseFloat(parameters.height?.toString() || '')
   const weightKg = parseFloat(parameters.weight?.toString() || '')
@@ -41,13 +66,29 @@ export const dialogflowHandler: ExportedHandlerFetchHandler<
   const bmiClass = classifyBMI(bmiValue)
   const bmiDescription = getBMIClassDescription(bmiClass)
 
+  const { accessToken, replyType } = z
+    .object({
+      accessToken: z.string().nullable(),
+      replyType: z.nativeEnum(ReplyType).default(ReplyType.TEXT),
+    })
+    .parse({
+      accessToken: request.headers.get('x-line-channel-access-token'),
+      replyType: request.headers.get('x-line-reply-type'),
+    })
+
+  if (replyType === ReplyType.FLEX) {
+    return Response.json(
+      {
+        fulfillmentMessages: [
+          { payload: { line: getBMIResultFlexMessage(bmiValue) } },
+        ],
+      },
+      { status: 200 },
+    )
+  }
+
   return Response.json(
     { fulfillmentMessages: [{ text: { text: [bmiDescription] } }] },
     { status: 200 },
   )
-}
-
-const isIntentMatch = (expectedIntentId: string, queryResult: QueryResult) => {
-  const intentId = queryResult.intent.name.split('/').pop()
-  return intentId === expectedIntentId
 }

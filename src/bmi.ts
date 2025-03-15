@@ -23,11 +23,26 @@ enum BMIClass {
 }
 
 const BMIClassDescription = {
-  [BMIClass.UNDERWEIGHT]: 'คุณผอมไป กินข้าวบ้างนะ',
-  [BMIClass.NORMAL_WEIGHT]: 'คุณหุ่นดีจุงเบย',
-  [BMIClass.OVERWEIGHT]: 'คุณเริ่มจะท้วมแล้วนะ',
-  [BMIClass.OBESE_CLASS_1]: 'คุณอ้วนละ ออกกำลังกายหน่อยนะ',
-  [BMIClass.OBESE_CLASS_2]: 'คุณอ้วนเกินไปละ หาหมอเหอะ',
+  [BMIClass.UNDERWEIGHT]: {
+    color: '#3366ff',
+    description: 'คุณผอมไป กินข้าวบ้างนะ',
+  },
+  [BMIClass.NORMAL_WEIGHT]: {
+    color: '#008000',
+    description: 'คุณหุ่นดีจุงเบย',
+  },
+  [BMIClass.OVERWEIGHT]: {
+    color: '#ffcc00',
+    description: 'คุณเริ่มจะท้วมแล้วนะ',
+  },
+  [BMIClass.OBESE_CLASS_1]: {
+    color: '#ff9900',
+    description: 'คุณอ้วนละ ออกกำลังกายหน่อยนะ',
+  },
+  [BMIClass.OBESE_CLASS_2]: {
+    color: '#ff0000',
+    description: 'คุณอ้วนเกินไปละ หาหมอเหอะ',
+  },
 }
 
 export const classifyBMI = (bmi: number) => {
@@ -56,4 +71,71 @@ export const classifyBMI = (bmi: number) => {
 
 export const getBMIClassDescription = (bmiClass: BMIClass) => {
   return BMIClassDescription[bmiClass]
+}
+
+export const getBMIResultFlexMessage = (bmiValue: number) => {
+  const bmiClass = classifyBMI(bmiValue)
+  const bmiDescription = getBMIClassDescription(bmiClass)
+
+  return {
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: 'ผลดัชนีมวลกาย',
+                weight: 'bold',
+                size: 'lg',
+                wrap: true,
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                contents: [
+                  {
+                    type: 'span',
+                    text: bmiValue.toFixed(2),
+                    size: 'xxl',
+                    weight: 'bold',
+                    color: bmiDescription.color,
+                  },
+                  {
+                    type: 'span',
+                    text: '⠀กก./ม.²',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: bmiDescription.description,
+              },
+            ],
+          },
+        ],
+        borderWidth: '8px',
+        borderColor: bmiDescription.color,
+        cornerRadius: 'xl',
+      },
+    },
+    type: 'flex',
+    altText: `ผลดัชนีมวลกาย: ${bmiValue.toFixed(2)} กก./ม.² (${bmiDescription.description})`,
+  }
 }
