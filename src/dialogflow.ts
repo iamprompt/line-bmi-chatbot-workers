@@ -58,6 +58,7 @@ const handleBMIDialogflow = async (
   const weightKg = parseFloat(parameters.weight?.toString() || '')
 
   if (isNaN(heightCm) || isNaN(weightKg)) {
+    console.log('Invalid Parameters (weight / height)')
     return Response.json(
       { message: 'Invalid Parameters (weight / height)' },
       { status: 400 },
@@ -76,7 +77,7 @@ const handleBMIDialogflow = async (
       })
       .parse({
         accessToken: request.headers.get('x-line-channel-access-token'),
-        replyType: request.headers.get('x-line-reply-type'),
+        replyType: request.headers.get('x-line-reply-type') || ReplyType.TEXT,
       })
 
     if (replyType === ReplyType.FLEX) {
@@ -91,10 +92,14 @@ const handleBMIDialogflow = async (
     }
 
     return Response.json(
-      { fulfillmentMessages: [{ text: { text: [bmiDescription] } }] },
+      {
+        fulfillmentMessages: [{ text: { text: [bmiDescription.description] } }],
+      },
       { status: 200 },
     )
   } catch (error) {
+    console.log('Error parsing headers:', error)
+
     if (error instanceof z.ZodError) {
       return Response.json(
         { message: 'Invalid Request', details: error.issues },
