@@ -17,17 +17,18 @@ export const dialogflowHandler: ExportedHandlerFetchHandler<
   }
 
   const headerIntent = request.headers.get('x-dialogflow-intent')
-  console.log(`Header Intent: ${headerIntent}`)
-  if (!headerIntent) {
-    return Response.json(
-      { message: 'Missing Intent Attribute (x-dialogflow-intent)' },
-      { status: 400 },
-    )
-  }
+  // console.log(`Header Intent: ${headerIntent}`)
+  // if (!headerIntent) {
+  //   return Response.json(
+  //     { message: 'Missing Intent Attribute (x-dialogflow-intent)' },
+  //     { status: 400 },
+  //   )
+  // }
 
   const json = await request.json<DialogflowWebhookRequestBody>()
   const { queryResult } = json
-  if (!isIntentMatch(headerIntent, queryResult)) {
+
+  if (!isIntentMatch(headerIntent || 'BMI - custom - yes', queryResult)) {
     return Response.json({ message: 'Intent does not match' }, { status: 400 })
   }
 
@@ -36,7 +37,8 @@ export const dialogflowHandler: ExportedHandlerFetchHandler<
 
 const isIntentMatch = (expectedIntentId: string, queryResult: QueryResult) => {
   const intentId = queryResult.intent.name.split('/').pop()
-  return intentId === expectedIntentId
+  const intentName = queryResult.intent.displayName
+  return intentId === expectedIntentId || intentName === expectedIntentId
 }
 
 enum ReplyType {
